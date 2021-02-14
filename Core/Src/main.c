@@ -104,12 +104,6 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-	  int timerValue = __HAL_TIM_GET_COUNTER(&htim2);
-	  if (timerValue == 50)
-		  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
-
-	  if (timerValue == 320)
-		  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
   }
   /* USER CODE END 3 */
 }
@@ -192,9 +186,19 @@ static void MX_TIM2_Init(void)
   }
   /* USER CODE BEGIN TIM2_Init 2 */
 
-  HAL_TIM_Base_Start(&htim2);
+  HAL_TIM_Base_Start_IT(&htim2);
   /* USER CODE END TIM2_Init 2 */
+  HAL_NVIC_SetPriority(TIM2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(TIM2_IRQn);
 
+}
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  if (htim->Instance == TIM2 )
+  {
+    HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+  }
 }
 
 /**
