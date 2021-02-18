@@ -4,13 +4,12 @@ extern TIM_HandleTypeDef htim2;
 static void MX_TIM2_Init(void);
 enum state_t {RELEASE, WRITE} state;
 static int16_t step;
+static uint8_t value;
 
-// TODO, change to bit pattern
-static int16_t SRCLK[] = {0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1};
-static int16_t SER[]   = {1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-static int16_t RCLK[]  = {0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0};
-static int16_t SRCLR[] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
-static int16_t OE[]    = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+static int16_t SRCLK   = 0b0101010101010101000000;
+static int16_t RCLK    = 0b0000101010101010101010;
+static int16_t SRCLR   = 0b0011111111111111111111;
+static int16_t OE      = 0b1111111111111111000000;
 
 
 void shift_init()
@@ -22,11 +21,14 @@ void shift_init()
   HAL_NVIC_EnableIRQ(TIM2_IRQn);
 
   state = RELEASE;
+
 }
 
-void shift_write()
+void shift_write(uint8_t value_param)
 {
   state = WRITE;
+  step = 0;
+  value = value_param;
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
@@ -36,38 +38,44 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   if (state == WRITE)
   {
     //HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5); SRCLK
-    if (SRCLK[step])
+    if (SRCLK && ( 1<< (21-step)))
       HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
     else
       HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
 
+    uint16_t pin_value = GPIO_PIN_RESET;
     //HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_0); SER
-    if (SER[step])
-      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_SET);
-    else
-      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_RESET);
+    if (step > 1 && step < 18)
+    {
+      uint8_t position = step / 2 - 1;
+      uint8_t compare = 1 << position;
+      if (compare & value)
+        pin_value = GPIO_PIN_SET;
+    }
+
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, pin_value);
 
     //HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0); RCLK
-    if (RCLK[step])
+    if (RCLK && ( 1<< (21-step)))
       HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
     else
       HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
 
     //HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_4); SRCLR
-    if (SRCLR[step])
+    if (SRCLR && ( 1<< (21-step)))
       HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_SET);
     else
       HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_RESET);
 
     //HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_1); OE
-    if (OE[step])
+    if (OE && ( 1<< (21-step)))
       HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_SET);
     else
       HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_RESET);
 
 
     step++;
-    if (step == 20)
+    if (step == 22)
     {
       step = 0;
       state = RELEASE;
@@ -94,7 +102,7 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 63999;
+  htim2.Init.Prescaler = 63;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim2.Init.Period = 53;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;

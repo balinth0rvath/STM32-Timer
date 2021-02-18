@@ -96,14 +96,27 @@ int main(void)
   /* USER CODE BEGIN 2 */
   shift_init();
   /* USER CODE END 2 */
+  HAL_Delay(1000);
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+
   while (1)
   {
+
     /* USER CODE END WHILE */
-    HAL_Delay(1000);
-    shift_write();
+    shift_write(0b00011000);
+    HAL_Delay(100);
+    shift_write(0b00100100);
+    HAL_Delay(100);
+    shift_write(0b01000010);
+    HAL_Delay(100);
+    shift_write(0b10000001);
+    HAL_Delay(100);
+    shift_write(0b01000010);
+    HAL_Delay(100);
+    shift_write(0b00100100);
+    HAL_Delay(100);
     /* USER CODE BEGIN 3 */
 
   }
